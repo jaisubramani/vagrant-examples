@@ -1,0 +1,43 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+service = 'gitlab'
+
+# add swap space to avoid http 500 error http://stackoverflow.com/questions/26777690/gitlab-500-error-when-adding-removing-ssh-key
+$add_swap = <<SCRIPT
+if [ ! -f /swapfile ]; then
+  sudo dd if=/dev/zero of=/swapfile bs=2048k count=1000
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+  sudo swapon -s
+  sudo chown root:root /swapfile
+  sudo chmod 0600 /swapfile
+  sudo echo "/swapfile       none    swap    sw      0       0" >> /etc/fstab
+fi
+SCRIPT
+
+$install = <<SCRIPT
+sudo apt-get -y install curl openssh-server ca-certificates postfix
+curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh -o script.deb.sh
+chmod +x script.deb.sh
+./script.deb.sh
+sudo apt-get -y install gitlab-ce
+sudo gitlab-ctl reconfigure
+SCRIPT
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.define "#{service}" do |t|
+  end
+  config.vm.box = "ubuntu/trusty64"
+  # gitlab requires at least 1GB RAM
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "1024"]
+  end
+  config.vm.hostname = "#{service}"
+  config.vm.network "forwarded_port", guest: 80, host: 9080
+  config.vm.provision "shell", inline: $add_swap
+  config.vm.provision "shell", inline: $install
+end

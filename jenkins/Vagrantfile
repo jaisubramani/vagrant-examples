@@ -1,0 +1,28 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+service = 'jenkins'
+
+$provision = <<SCRIPT
+wget -q -O - https://jenkins-ci.org/debian/jenkins-ci.org.key | sudo apt-key add -
+sudo sh -c 'echo deb http://pkg.jenkins-ci.org/debian binary/ > /etc/apt/sources.list.d/jenkins.list'
+sudo apt-get update
+sudo apt-get -y install jenkins
+sudo update-rc.d jenkins defaults
+sudo service jenkins start
+SCRIPT
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.define "#{service}" do |t|
+  end
+  config.vm.box = "ubuntu/trusty64"
+  config.vm.hostname = "#{service}"
+  config.vm.provider :virtualbox do |vbox|
+    vbox.memory = 512
+    vbox.cpus = 1
+  end
+  config.vm.network :private_network, ip: "192.168.56.10"
+  config.vm.provision "shell", inline: $provision
+end

@@ -31,3 +31,15 @@ standup a gitlab instance
 open the browser and hit [port 9080](http://localhost:9080)
 
 refer [gitlab documentation](https://about.gitlab.com/downloads/#ubuntu1404) for login credentials
+
+### 2. jenkins
+
+standup a jenkins instance using custom settings (private_network, memory and cpus)
+
+#### usage
+
+`$ cd jenkins`
+
+`$ vagrant up`
+
+open the browser and hit [192.168.56.10:8080](http://192.168.56.10:8080)

@@ -1,0 +1,39 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+service = 'apache'
+
+$provision = <<SCRIPT
+sudo apt-get -y install apache2
+sudo rm -rf /etc/apache2/sites-available/*.conf /etc/apache2/sites-enabled/*.conf
+sudo cat << 'EOF' > /etc/apache2/sites-enabled/custom.conf
+ServerName localhost
+<VirtualHost *:80>
+  ServerAdmin webmaster@localhost
+  DocumentRoot /var/www/html
+  <Directory "/var/www/html">
+    Options All Indexes FollowSymLinks
+    Order allow,deny
+    Allow from all
+  </Directory>
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
+sudo ln -s /etc/apache2/sites-enabled/custom.conf /etc/apache2/sites-available/custom.conf
+sudo rm -rf /var/www/html/index.html
+sudo touch /var/www/html/readme.txt
+sudo service apache2 restart
+sudo update-rc.d apache2 defaults
+SCRIPT
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.define "#{service}" do |t|
+  end
+  config.vm.box = "ubuntu/trusty64"
+  config.vm.hostname = "#{service}"
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.provision "shell", inline: $provision
+end

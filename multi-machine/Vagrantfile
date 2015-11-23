@@ -1,0 +1,61 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+boxes = [
+    {
+        :name => "web01",
+        :eth1 => "192.168.75.10",
+        :mem => "256",
+        :cpu => "1"
+    },
+    {
+        :name => "db01",
+        :eth1 => "192.168.75.11",
+        :mem => "512",
+        :cpu => "1"
+    }
+]
+
+$install_nginx = <<SCRIPT
+sudo apt-get update
+sudo apt-get -y install nginx
+sudo update-rc.d nginx defaults
+sudo service nginx restart
+SCRIPT
+
+$install_mysql = <<SCRIPT
+sudo apt-get update
+sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password password root'
+sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password root'
+sudo apt-get -y install mysql-server
+sudo update-rc.d mysql defaults
+sudo service mysql restart
+SCRIPT
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "ubuntu/trusty64"
+
+  # Turn off shared folders
+  config.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
+
+  boxes.each do |opts|
+    config.vm.define opts[:name] do |config|
+      config.vm.hostname = opts[:name]
+
+      config.vm.provider "virtualbox" do |vbox|
+        vbox.memory = opts[:mem]
+        vbox.cpus = opts[:cpu]
+      end
+
+      config.vm.network :private_network, ip: opts[:eth1]
+
+      if opts[:name] == "web01"
+        config.vm.provision "shell", inline: $install_nginx
+      elsif opts[:name] == "db01"
+        config.vm.provision "shell", inline: $install_mysql
+      end
+
+    end
+  end
+end
